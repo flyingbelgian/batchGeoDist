@@ -7,9 +7,9 @@ import geocalc
 file1 = "sample_source.csv"
 file2 = "sample_source2.csv"
 
-set1 = filehandler.Source(file1)
-set2 = filehandler.Source(file2)
+refpts = filehandler.Source(file1)
+assesspts = filehandler.Source(file2)
 
-dataset = geocalc.DistSet(set1.coords, set2.coords)
+dataset = geocalc.DistSet(refpts.coords, assesspts.coords)
 
-dataset.greatCircle()
+print(dataset.geodist)
