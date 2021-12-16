@@ -12,12 +12,11 @@ class Source():
                 lat_sign = -1
             if row['Lon Dir'] == 'W':
                 lon_sign = -1
-            id = int(row['ID'])
             lat = (row['Lat Deg'] + row['Lat Min']/60 + row['Lat Sec']/3600) * lat_sign
             lon = (row['Lon Deg'] + row['Lon Min']/60 + row['Lon Sec']/3600) * lon_sign
             utm_coords = utm.project((lon,lat))
             coord = {
-                "id": id,
+                "id": row['ID'],
                 "lat_deg": row['Lat Deg'],
                 "lat_min": row['Lat Min'],
                 "lat_sec": row['Lat Sec'],
@@ -34,7 +33,6 @@ class Source():
                 }
             self.coords.append(coord)
 
-    # def write_csv(self):
-    #     new_data = pandas.DataFrame(self.coords)
-    #     new_file = self.file.strip(".csv")+"_converted.csv"
-    #     new_data.to_csv(new_file, index=False)
+def write_csv(filename, dataframe):
+    new_file = filename.split('.')[0]+"_output.csv"
+    dataframe.to_csv(new_file)
