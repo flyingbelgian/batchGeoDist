@@ -22,7 +22,7 @@ class DistSet():
             
     def posRelation(self,refptrow):
         data = []
-        for i,row in self.assesspts.iterrows():
+        for i,row in self.dataframe.iterrows():
             relation = ""
             if refptrow['UTM_north'] > row['UTM_north']:
                 relation += "S"
@@ -41,7 +41,7 @@ class DistSet():
         data_dist = []
         lon1 = refptrow['lon_dec']
         lat1 = refptrow['lat_dec']
-        for i,row in self.assesspts.iterrows():
+        for i,row in self.dataframe.iterrows():
             lon2 = row['lon_dec']
             lat2 = row['lat_dec']
             result = self.geod.inv(lon1,lat1,lon2,lat2)
@@ -62,13 +62,26 @@ class DistSet():
         data_dist = []
         x1 = refptrow['UTM_east']
         y1 = refptrow['UTM_north']
-        for i,row in self.assesspts.iterrows():
+        # #correct for grid convergence on ref pt
+        # utmzoneref = int(refptrow['UTM_zone'][:-1])
+        # utmmeridianref = (utmzoneref-1) * 6 - 177
+        # gridconvergenceref = math.degrees(math.atan(math.tan(refptrow['lon_dec']-utmmeridianref) * math.sin(refptrow['lat_dec'])))
+        for i,row in self.dataframe.iterrows():
             x2 = row['UTM_east']
             y2 = row['UTM_north']
-            fwd = math.atan((y2-y1)/(x2-x1))
-            data_fwd.append(fwd)
-            bck = fwd - 180
-            data_bck.append(bck)
+            # #correct for grid convergence on assess pt
+            # utmzoneassess = int(row['UTM_zone'][:-1])
+            # utmmeridianassess = (utmzoneassess-1) * 6 - 177
+            # gridconvergenceassess = math.degrees(math.atan(math.tan(row['lon_dec']-utmmeridianassess) * math.sin(row['lat_dec'])))
+            fwd_radians = math.atan((y2-y1)/(x2-x1))
+            fwd = 90-math.degrees(fwd_radians)
+            bck = fwd+180
+            if refptrow['UTM_east'] > row['UTM_east']:  #switch bearings around if refpt is east of assesspt
+                data_fwd.append(bck)
+                data_bck.append(fwd)
+            else:
+                data_fwd.append(fwd)
+                data_bck.append(bck)
             dist = math.sqrt((x2-x1)**2 + (y2-y1)**2)
             data_dist.append(dist)
         return (data_fwd,data_bck,data_dist)
