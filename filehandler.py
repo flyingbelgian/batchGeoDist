@@ -33,6 +33,13 @@ class Source():
                 }
             self.coords.append(coord)
 
+    def filterData(self,field,items):
+        new_coords = []
+        for point in self.coords:
+            if point[field] in items:
+                new_coords.append(point)
+        self.coords = new_coords
+
 def write_csv(filename, dataframe):
     new_file = filename.split('.')[0]+"_output.csv"
     dataframe.to_csv(new_file)
