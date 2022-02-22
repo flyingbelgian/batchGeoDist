@@ -3,8 +3,8 @@ import tkinter as tk
 import filehandler
 import geocalc
 
-file1 = filedialog.askopenfilename(title="Select csv file containing 1st set of coordinates.")
-file2 = filedialog.askopenfilename(title="Select csv file containing 2nd set of coordinates.")
+file1 = filedialog.askopenfilename(title="Select csv file containing reference points.")
+file2 = filedialog.askopenfilename(title="Select csv file containing points to be assessed.")
 # file1 = "sample_refpts.csv"
 # file2 = "sample_source.csv"
 
@@ -14,9 +14,9 @@ assesspts = filehandler.Source(file2)
 window = tk.Tk()
 window.config(padx=20)
 window.title("Select Reference Points")
-instruction = tk.Label(window, \
-    text=f"Select the points from\n{file1}\nto be used as reference points:", \
-    justify="left")
+instruction = tk.Label(window,
+                       text=f"Select the points from\n{file1}\nto be used as reference points:",
+                       justify="left")
 instruction.pack(pady=20, anchor="w")
 
 checked = []
@@ -28,6 +28,8 @@ for i in range(len(refpts.coords)):
     t.pack(anchor="w")
 
 selected = []
+
+
 def getValues():
     count = 0
     for variable in checked:
@@ -35,13 +37,14 @@ def getValues():
             selected.append(refpts.coords[count]['id'])
         count += 1
     window.quit()
-    
-run = tk.Button(window, text="Save", command = getValues)
+
+
+run = tk.Button(window, text="Save", command=getValues)
 run.pack(pady=20)
 
 window.mainloop()
 
-refpts.filterData('id',selected)
+refpts.filterData('id', selected)
 
 dataset = geocalc.DistSet(refpts.coords, assesspts.coords)
 
