@@ -3,70 +3,85 @@ import pandas
 import pyproj
 import math
 
-
 class DistSet():
     def __init__(self, refpts, assesspts):
         self.refpts = pandas.DataFrame(refpts)
         self.assesspts = pandas.DataFrame(assesspts)
         self.dataframe = self.assesspts
         self.geod = pyproj.Geod(ellps="WGS84")
-        # for i, row in self.refpts.iterrows():
-        #     self.dataframe[f"{row['id']} relation"] = self.posRelation(row)
-        #     geodata = self.geoDist(row)
-        #     self.dataframe[f"{row['id']} geo fwd"] = geodata[0]
-        #     self.dataframe[f"{row['id']} geo bck"] = geodata[1]
-        #     self.dataframe[f"{row['id']} geo dist"] = geodata[2]
-        #     mapdata = self.mapDist(row)
-        #     self.dataframe[f"{row['id']} map fwd"] = mapdata[0]
-        #     self.dataframe[f"{row['id']} map bck"] = mapdata[1]
-        #     self.dataframe[f"{row['id']} map dist"] = mapdata[2]
+        for i,row in self.refpts.iterrows():
+            self.dataframe[f"{row['id']} relation"] = self.posRelation(row)
+            geodata = self.geoDist(row)
+            self.dataframe[f"{row['id']} geo fwd"] = geodata[0]
+            self.dataframe[f"{row['id']} geo bck"] = geodata[1]
+            self.dataframe[f"{row['id']} geo dist"] = geodata[2]
+            mapdata = self.mapDist(row)
+            self.dataframe[f"{row['id']} map fwd"] = mapdata[0]
+            self.dataframe[f"{row['id']} map bck"] = mapdata[1]
+            self.dataframe[f"{row['id']} map dist"] = mapdata[2]
+            
+    def posRelation(self,refptrow):
+        data = []
+        for i,row in self.dataframe.iterrows():
+            relation = ""
+            if refptrow['UTM_north'] > row['UTM_north']:
+                relation += "S"
+            elif refptrow['UTM_north'] < row['UTM_north']:
+                relation += "N"
+            if refptrow['UTM_east'] > row['UTM_east']:
+                relation += "W"
+            elif refptrow['UTM_east'] < row['UTM_east']:
+                relation += "E"
+            data.append(relation)
+        return data
 
-    def posRelation(coord_DD_1: tuple, coord_DD_2: tuple):
-        '''Takes 2 coordinate tuples (lat, lon), returns a string expressing relative location'''
-        relation = ""
-        if coord_DD_2[0] > coord_DD_1[0]:
-            relation += "N"
-        elif coord_DD_2[0] < coord_DD_1[0]:
-            relation += "S"
-        if coord_DD_1[1] > coord_DD_2[1]:
-            relation += "W"
-        elif coord_DD_1[1] < coord_DD_2[1]:
-            relation += "E"
-        return relation
-
-    def geoDist(coord_DD_1: tuple, coord_DD_2: tuple, geod: pyproj.Geod):
-        '''Takes 2 coordinate tuples (lat,lon) and geod definition, \
-           returns tuple with relational info, avoiding negative bearings'''
-        result = geod.inv(coord_DD_1[1], coord_DD_1[0], coord_DD_2[1], coord_DD_2[0])
-        if result[0] < 0:
-            result[0] += 360
-        if result[1] < 0:
-            result[1] += 360
-        return result
-
-    def mapDist(coord_UTM_1: tuple, coord_UTM_2: tuple, UTM_zone: string):
-        '''Takes 2 coordinate tuples (northing,easting) and UTM zone (string), \
-           returns tuple with relational info, corrected for projection errors in bearing and distance. \
-           Distance correction uses Sympson method'''
-        x1 = coord_UTM_1[1]
-        y1 = coord_UTM_1[0]
-        x2 = coord_UTM_2[1]
-        y2 = coord_UTM_2[0]
-        utm_zone_nr = int(UTM_zone[:-1])
-        utm_meridian = utm_zone_nr * 6 - 183
+    def geoDist(self,refptrow):
+        data_fwd = []
+        data_bck = []
+        data_dist = []
+        lon1 = refptrow['lon_dec']
+        lat1 = refptrow['lat_dec']
+        for i,row in self.dataframe.iterrows():
+            lon2 = row['lon_dec']
+            lat2 = row['lat_dec']
+            result = self.geod.inv(lon1,lat1,lon2,lat2)
+            corr_fwd = 0
+            if result[0] < 0:
+                corr_fwd = 360
+            corr_bck = 0
+            if result[1] < 0:
+                corr_bck = 360
+            data_fwd.append(result[0]+corr_fwd)
+            data_bck.append(result[1]+corr_bck)
+            data_dist.append(result[2])
+        return (data_fwd,data_bck,data_dist)
+    
+    def mapDist(self,refptrow):
+        data_fwd = []
+        data_bck = []
+        data_dist = []
+        x1 = refptrow['UTM_east']
+        y1 = refptrow['UTM_north']
+        # #correct for grid convergence on ref pt
+        # utmzoneref = int(refptrow['UTM_zone'][:-1])
+        # utmmeridianref = (utmzoneref-1) * 6 - 177
         # gridconvergenceref = math.degrees(math.atan(math.tan(refptrow['lon_dec']-utmmeridianref) * math.sin(refptrow['lat_dec'])))
-        # #correct for grid convergence on assess pt
-        # utmzoneassess = int(row['UTM_zone'][:-1])
-        # utmmeridianassess = (utmzoneassess-1) * 6 - 177
-        # gridconvergenceassess = math.degrees(math.atan(math.tan(row['lon_dec']-utmmeridianassess) * math.sin(row['lat_dec'])))
-        fwd_radians = math.atan((y2 - y1) / (x2 - x1))
-        fwd_raw = 90 - math.degrees(fwd_radians)
-        bck_raw = fwd_raw + 180
-        if x1 < x2:  # use raw values if point 1 ir west of point 2
-            fwd = fwd_raw
-            bck = bck_raw
-        else:  # switch bearings if point 1 is east of point 2
-            fwd = bck_raw
-            bck = fwd_raw
-        dist = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
-        return (fwd, bck, dist)
+        for i,row in self.dataframe.iterrows():
+            x2 = row['UTM_east']
+            y2 = row['UTM_north']
+            # #correct for grid convergence on assess pt
+            # utmzoneassess = int(row['UTM_zone'][:-1])
+            # utmmeridianassess = (utmzoneassess-1) * 6 - 177
+            # gridconvergenceassess = math.degrees(math.atan(math.tan(row['lon_dec']-utmmeridianassess) * math.sin(row['lat_dec'])))
+            fwd_radians = math.atan((y2-y1)/(x2-x1))
+            fwd = 90-math.degrees(fwd_radians)
+            bck = fwd+180
+            if refptrow['UTM_east'] > row['UTM_east']:  #switch bearings around if refpt is east of assesspt
+                data_fwd.append(bck)
+                data_bck.append(fwd)
+            else:
+                data_fwd.append(fwd)
+                data_bck.append(bck)
+            dist = math.sqrt((x2-x1)**2 + (y2-y1)**2)
+            data_dist.append(dist)
+        return (data_fwd,data_bck,data_dist)
