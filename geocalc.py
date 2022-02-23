@@ -22,6 +22,8 @@ class DistSet():
             self.dataframe[f"{row['id']} map dist"] = mapdata[2]
 
     def posRelation(self, refptrow):
+        '''Takes row of data and returns string with relative compass direction \
+        from assess point to reference point.'''
         data = []
         for i, row in self.dataframe.iterrows():
             relation = ""
@@ -41,6 +43,7 @@ class DistSet():
         return data
 
     def geoDist(self, refptrow):
+        '''Takes row of data and returns tuple with fwd and bck bearings and distance'''
         data_fwd = []
         data_bck = []
         data_dist = []
@@ -62,17 +65,21 @@ class DistSet():
         return (data_fwd, data_bck, data_dist)
 
     def mapDist(self, refptrow):
+        '''Takes row of data and returns tuple with fwd and bck bearings and distance \
+        measured from UTM coordinates and corrected for grid convergence'''
         data_fwd = []
         data_bck = []
         data_dist = []
         x1 = refptrow['UTM_east']
         y1 = refptrow['UTM_north']
-        # # correct for grid convergence on ref pt
-        # utm_zone_nr_ref = int(refptrow['UTM_zone'][:-1])
-        # utm_meridian_ref = (utm_zone_nr_ref - 1) * 6 - 177
-        # grid_convergence_ref = \
-        #     math.degrees(math.atan(math.tan(refptrow['lon_dec'] - utm_meridian_ref)
-        #                            * math.sin(refptrow['lat_dec'])))
+        # correct for grid convergence on ref pt
+        utm_zone_nr_ref = int(refptrow['UTM_zone'][:-1])
+        utm_meridian_ref = utm_zone_nr_ref * 6 - 183
+        lon_ref_rad = math.radians(refptrow['lon_dec'] - utm_meridian_ref)
+        lon_ref_tan = math.tan(lon_ref_rad)
+        lat_ref_rad = math.radians(refptrow['lat_dec'])
+        lat_ref_sin = math.sin(lat_ref_rad)
+        grid_convergence_ref = math.degrees(math.atan(lon_ref_tan * lat_ref_sin))
         for i, row in self.dataframe.iterrows():
             x2 = row['UTM_east']
             y2 = row['UTM_north']
@@ -80,12 +87,14 @@ class DistSet():
                 same_x = True
             else:
                 same_x = False
-            # # correct for grid convergence on assess pt
-            # utm_zone_nr_ass = int(row['UTM_zone'][:-1])
-            # utm_meridian_ass = (utm_zone_nr_ass - 1) * 6 - 177
-            # grid_convergence_ass = \
-            #     math.degrees(math.atan(math.tan(row['lon_dec'] - utm_meridian_ass)
-            #                            * math.sin(row['lat_dec'])))
+            # correct for grid convergence on assess pt
+            utm_zone_nr_ass = int(row['UTM_zone'][:-1])
+            utm_meridian_ass = utm_zone_nr_ass * 6 - 183
+            lon_ass_rad = math.radians(row['lon_dec'] - utm_meridian_ass)
+            lon_ass_tan = math.tan(lon_ass_rad)
+            lat_ass_rad = math.radians(row['lat_dec'])
+            lat_ass_sin = math.sin(lat_ass_rad)
+            grid_convergence_ass = math.degrees(math.atan(lon_ass_tan * lat_ass_sin))
             if same_x:
                 fwd = 0
             else:
