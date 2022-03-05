@@ -1,0 +1,9 @@
+ID,Lat Deg,Lat Min,Lat Sec,Lat Dir,Lon Deg,Lon Min,Lon Sec,Lon Dir,Elev,Bearing Ref
+N,33,30,0,S,151,10,0,E,5,S
+E,33,40,0,S,151,20,0,E,5,W
+S,33,50,0,S,151,10,0,E,5,N
+W,33,40,0,S,151,0,0,E,5,E
+NE,33,30,0,S,151,20,0,E,5,SW
+NW,33,30,0,S,151,0,0,E,5,SE
+SE,33,50,0,S,151,20,0,E,5,NW
+SW,33,50,0,S,151,0,0,E,5,NE

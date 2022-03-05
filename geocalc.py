@@ -96,18 +96,22 @@ class DistSet():
             lat_ass_sin = math.sin(lat_ass_rad)
             grid_convergence_ass = math.degrees(math.atan(lon_ass_tan * lat_ass_sin))
             if same_x:
-                fwd = 0
+                fwd_slope = 0
             else:
                 fwd_radians = math.atan((y2 - y1) / (x2 - x1))
-                fwd = 90 - math.degrees(fwd_radians)
-            bck = fwd + 180
+                fwd_slope = 90 - math.degrees(fwd_radians)
+            bck_slope = fwd_slope + 180
             # switch bearings around if refpt is east of assesspt
             if refptrow['UTM_east'] > row['UTM_east']:
-                data_fwd.append(bck)
-                data_bck.append(fwd)
+                fwd_bearing = bck_slope
+                bck_bearing = fwd_slope
             else:
-                data_fwd.append(fwd)
-                data_bck.append(bck)
+                fwd_bearing = fwd_slope
+                bck_bearing = bck_slope
+            fwd_bearing_corrected = fwd_bearing + grid_convergence_ref
+            bck_bearing_corrected = bck_bearing + grid_convergence_ass
+            data_fwd.append(fwd_bearing_corrected)
+            data_bck.append(bck_bearing_corrected)
             dist = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
             data_dist.append(dist)
         return (data_fwd, data_bck, data_dist)
