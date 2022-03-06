@@ -1,4 +1,3 @@
-from types import LambdaType
 import pandas
 import pyproj
 import math
@@ -67,19 +66,38 @@ class DistSet():
     def mapDist(self, refptrow):
         '''Takes row of data and returns tuple with fwd and bck bearings and distance \
         measured from UTM coordinates and corrected for grid convergence'''
+
+        def gridConvergence(UTM_zone, lat_dec, lon_dec):
+            utm_zone_nr = int(UTM_zone[:-1])
+            utm_meridian = utm_zone_nr * 6 - 183
+            lon_rad = math.radians(lon_dec - utm_meridian)
+            lon_tan = math.tan(lon_rad)
+            lat_rad = math.radians(lat_dec)
+            lat_sin = math.sin(lat_rad)
+            grid_convergence = math.degrees(math.atan(lon_tan * lat_sin))
+            return grid_convergence
+
+        def approximateIntegral(iterations, x1, x2):
+            value = 0
+
+            def f(x):
+                return (0.9996 / (math.cos((x-500000) / 6378137)))
+
+            for n in range(1, iterations+1):
+                value += f(x1+((n-(1/2))*((x2-x1)/iterations)))
+            value2 = ((x2-x1)/iterations)*value
+            return value2
+
         data_fwd = []
         data_bck = []
         data_dist = []
         x1 = refptrow['UTM_east']
         y1 = refptrow['UTM_north']
         # correct for grid convergence on ref pt
-        utm_zone_nr_ref = int(refptrow['UTM_zone'][:-1])
-        utm_meridian_ref = utm_zone_nr_ref * 6 - 183
-        lon_ref_rad = math.radians(refptrow['lon_dec'] - utm_meridian_ref)
-        lon_ref_tan = math.tan(lon_ref_rad)
-        lat_ref_rad = math.radians(refptrow['lat_dec'])
-        lat_ref_sin = math.sin(lat_ref_rad)
-        grid_convergence_ref = math.degrees(math.atan(lon_ref_tan * lat_ref_sin))
+        grid_convergence_ref = gridConvergence(
+            refptrow['UTM_zone'],
+            refptrow['lat_dec'],
+            refptrow['lon_dec'])
         for i, row in self.dataframe.iterrows():
             x2 = row['UTM_east']
             y2 = row['UTM_north']
@@ -88,13 +106,10 @@ class DistSet():
             else:
                 same_x = False
             # correct for grid convergence on assess pt
-            utm_zone_nr_ass = int(row['UTM_zone'][:-1])
-            utm_meridian_ass = utm_zone_nr_ass * 6 - 183
-            lon_ass_rad = math.radians(row['lon_dec'] - utm_meridian_ass)
-            lon_ass_tan = math.tan(lon_ass_rad)
-            lat_ass_rad = math.radians(row['lat_dec'])
-            lat_ass_sin = math.sin(lat_ass_rad)
-            grid_convergence_ass = math.degrees(math.atan(lon_ass_tan * lat_ass_sin))
+            grid_convergence_ass = gridConvergence(
+                row['UTM_zone'],
+                row['lat_dec'],
+                row['lon_dec'])
             if same_x:
                 fwd_slope = 0
             else:
@@ -112,6 +127,8 @@ class DistSet():
             bck_bearing_corrected = bck_bearing + grid_convergence_ass
             data_fwd.append(fwd_bearing_corrected)
             data_bck.append(bck_bearing_corrected)
-            dist = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+            d_x = approximateIntegral(1000, x1, x2)
+            d_y = y2 - y1
+            dist = math.sqrt(d_x**2 + d_y**2)
             data_dist.append(dist)
         return (data_fwd, data_bck, data_dist)

@@ -3,10 +3,10 @@ import tkinter as tk
 import filehandler
 import geocalc
 
-# file1 = filedialog.askopenfilename(title="Select csv file containing reference points.")
-# file2 = filedialog.askopenfilename(title="Select csv file containing points to be assessed.")
-file1 = "sample_gridpts.csv"
-file2 = "sample_gridpts.csv"
+file1 = filedialog.askopenfilename(title="Select csv file containing reference points.")
+file2 = filedialog.askopenfilename(title="Select csv file containing points to be assessed.")
+# file1 = "sample_gridpts.csv"
+# file2 = "sample_gridpts.csv"
 
 refpts = filehandler.Source(file1)
 assesspts = filehandler.Source(file2)
